@@ -1,0 +1,1383 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FindJapan 越境EC運営レポート</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  /* Brand */
+  --brand:#C00000;--brand-light:#FAEAEA;--brand-mid:#E57373;
+  /* Neutral */
+  --bg:#F8F7F5;--bg2:#FFFFFF;--bg3:#F2F0EC;--border:#E4E1DA;--border2:#CCC8BF;
+  --text:#1A1A18;--text2:#4A4845;--text3:#888480;--text4:#BAB8B3;
+  /* Semantic */
+  --c-pos:#1B6B3A;--c-pos-bg:#EBF5EE;
+  --c-warn:#8B5E00;--c-warn-bg:#FEF6E4;
+  --c-neg:#B91C1C;--c-neg-bg:#FEF2F2;
+  --c-blue:#1A56A0;--c-blue-bg:#EFF6FF;
+  --radius:10px;
+}
+body{font-family:'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;
+  background:var(--bg);color:var(--text);min-height:100vh;font-size:13px;line-height:1.5}
+
+/* ── ヘッダー ── */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 28px;background:#fff;
+  border-bottom:2px solid var(--brand);
+  gap:12px;flex-wrap:wrap;position:sticky;top:0;z-index:100;height:56px;
+}
+.logo{display:flex;align-items:center;gap:12px}
+.logo-mark{
+  width:34px;height:34px;border-radius:8px;background:var(--brand);
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:700;color:#fff;flex-shrink:0;letter-spacing:-.3px;
+}
+.logo-title{font-size:14px;font-weight:600;color:var(--text);letter-spacing:-.01em}
+.logo-sub{font-size:11px;color:var(--text3);margin-top:1px}
+.controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+select,button{
+  font-size:12px;padding:5px 12px;border-radius:6px;
+  border:1px solid var(--border2);background:#fff;color:var(--text);
+  cursor:pointer;font-family:inherit;transition:all .15s;
+}
+select:hover,button:hover{border-color:var(--brand);box-shadow:0 0 0 2px var(--brand-light)}
+select:focus{outline:none;border-color:var(--brand)}
+.cur-label{
+  padding:4px 10px;font-size:11px;border-radius:4px;
+  background:var(--brand-light);color:var(--brand);font-weight:500;border:none;
+}
+
+/* ── タブ ── */
+.tabs{
+  display:flex;gap:6px;background:#fff;
+  border-bottom:1px solid var(--border);padding:10px 28px;align-items:center;
+}
+.tab{
+  padding:6px 18px;font-size:12px;font-weight:500;color:var(--text3);
+  border:1px solid transparent;background:none;cursor:pointer;
+  border-radius:20px;transition:all .15s;font-family:inherit;
+}
+.tab:hover{color:var(--text);background:var(--bg3);border-color:var(--border)}
+.tab.active{
+  color:#fff;background:var(--brand);border-color:var(--brand);
+  box-shadow:0 2px 8px rgba(192,0,0,.2);
+}
+
+/* ── メイン ── */
+.main{padding:22px 28px;background:var(--bg);min-height:calc(100vh - 56px)}
+.tab-content{display:none}
+.tab-content.active{display:block}
+
+/* ── KPIカード（共通） ── */
+.kpi-row,.b-kpi-row{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));
+  gap:10px;margin-bottom:18px;
+}
+.kpi,.b-kpi{
+  background:#fff;border:1px solid var(--border);border-radius:var(--radius);
+  padding:14px 16px;transition:all .15s;position:relative;overflow:hidden;
+}
+.kpi::before,.b-kpi::before{
+  content:'';position:absolute;top:0;left:0;width:3px;height:100%;
+  background:var(--border2);transition:background .15s;
+}
+.kpi:hover,.b-kpi:hover{border-color:var(--brand);box-shadow:0 2px 10px rgba(192,0,0,.08)}
+.kpi:hover::before,.b-kpi:hover::before{background:var(--brand)}
+.kpi-label,.b-kpi-label{font-size:11px;color:var(--text3);margin-bottom:6px;font-weight:400}
+.kpi-val,.b-kpi-val{font-size:22px;font-weight:600;letter-spacing:-.03em}
+.kpi-sub,.b-kpi-sub{font-size:11px;color:var(--text4);margin-top:4px}
+
+/* ── カード ── */
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px}
+.b-row2{display:grid;grid-template-columns:3fr 2fr;gap:14px;margin-bottom:14px}
+@media(max-width:860px){.row2,.row3,.b-row2{grid-template-columns:1fr}}
+.card,.b-card{
+  background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:16px;
+}
+.card-title,.b-card-title{
+  font-size:10px;font-weight:600;color:var(--text3);
+  letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px;
+}
+.chart-h180{position:relative;height:180px}
+.chart-h200{position:relative;height:200px}
+.chart-h240{position:relative;height:240px}
+.chart-h280{position:relative;height:280px}
+
+/* ── テーブル共通 ── */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{
+  padding:8px 10px;text-align:right;font-size:10px;font-weight:600;color:var(--text3);
+  border-bottom:2px solid var(--border);white-space:nowrap;
+  background:var(--bg3);
+}
+thead th:first-child{text-align:left}
+tbody tr{border-bottom:1px solid var(--bg3)}
+tbody tr:hover{background:#FAFAF8}
+tbody td{padding:7px 10px;text-align:right;white-space:nowrap;color:var(--text)}
+tbody td:first-child{text-align:left;color:var(--text2)}
+tfoot td{padding:8px 10px;text-align:right;font-weight:600;
+  border-top:2px solid var(--border2);background:var(--bg3)}
+tfoot td:first-child{text-align:left}
+.num{font-variant-numeric:tabular-nums}
+.dim{color:var(--text4)}
+
+/* ── バッジ ── */
+.badge{font-size:10px;padding:2px 8px;border-radius:4px;font-weight:500;white-space:nowrap}
+.badge-good{background:var(--c-pos-bg);color:var(--c-pos)}
+.badge-warn{background:var(--c-warn-bg);color:var(--c-warn)}
+.badge-bad{background:var(--c-neg-bg);color:var(--c-neg)}
+
+/* ── セマンティックカラー ── */
+.good,.b-good{color:var(--c-pos)}.warn,.b-warn{color:var(--c-warn)}.bad,.b-bad{color:var(--c-neg)}
+.b-val-pos{color:var(--c-pos)}.b-val-neg{color:var(--c-neg)}.b-dim{color:var(--text4)}
+
+/* ── セクション区切り ── */
+.section{
+  font-size:10px;font-weight:600;color:var(--text4);letter-spacing:.1em;text-transform:uppercase;
+  margin:20px 0 8px;padding-bottom:5px;border-bottom:1px solid var(--border);
+}
+
+/* ── チャネル比較バー ── */
+.ch-bar-wrap{display:flex;flex-direction:column;gap:9px;padding:4px 0}
+.ch-bar-row{display:grid;grid-template-columns:90px 1fr 60px;align-items:center;gap:8px}
+.ch-bar-label{font-size:11px;color:var(--text2);text-align:right}
+.ch-bar-track{height:8px;background:var(--bg3);border-radius:4px;overflow:hidden}
+.ch-bar-fill{height:100%;border-radius:4px;transition:width .5s ease}
+.ch-bar-val{font-size:11px;font-weight:600;text-align:right}
+
+/* ── ウォーターフォール ── */
+.b-wf{display:flex;flex-direction:column;gap:7px}
+.b-wf-row{display:flex;align-items:center;gap:8px}
+.b-wf-name{font-size:11px;color:var(--text2);width:72px;text-align:right;flex-shrink:0}
+.b-wf-track{flex:1;height:13px;background:var(--bg3);border-radius:3px;position:relative;overflow:hidden}
+.b-wf-fill{height:100%;border-radius:3px;position:absolute}
+.b-wf-val{font-size:11px;width:64px;text-align:right;flex-shrink:0;font-variant-numeric:tabular-nums;font-weight:600}
+
+/* ── 統合ドーナツ ── */
+.b-legend{display:flex;flex-direction:column;gap:4px;flex:1}
+.b-legend-item{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text2);width:100%}
+.b-legend-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+.b-legend-sep{font-size:9px;font-weight:600;color:var(--text4);letter-spacing:.06em;text-transform:uppercase;
+  margin:4px 0 3px;padding-top:4px;border-top:1px solid var(--border)}
+
+/* ── 損益明細テーブル ── */
+.b-pl-table{width:100%;border-collapse:collapse;font-size:12px}
+.b-pl-table th{padding:8px 10px;font-size:10px;font-weight:600;color:var(--text3);
+  border-bottom:2px solid var(--border);white-space:nowrap;text-align:right;background:var(--bg3)}
+.b-pl-table th:first-child{text-align:left}
+.b-pl-table td{padding:5px 10px;text-align:right;font-variant-numeric:tabular-nums;
+  white-space:nowrap;border-bottom:1px solid var(--bg3)}
+.b-pl-table td:first-child{text-align:left;color:var(--text2)}
+.b-pl-table tr.b-sub td:first-child{padding-left:20px;color:var(--text3);font-size:11px}
+.b-pl-table tr.b-total td{font-weight:600;color:var(--text);background:#FAFAF8;border-bottom:1px solid var(--border)}
+.b-pl-table tr.b-grand td{font-weight:600;background:var(--bg3);
+  border-top:2px solid var(--border2);border-bottom:2px solid var(--border2)}
+.b-pl-table tr:hover td{background:#FEF9F9}
+
+/* ── 内訳テーブル ── */
+.b-detail-tbl{width:100%;border-collapse:collapse;font-size:11px}
+.b-detail-tbl th{padding:6px 8px;font-size:10px;font-weight:600;color:var(--text3);
+  border-bottom:2px solid var(--border);text-align:right;background:var(--bg3)}
+.b-detail-tbl th:first-child{text-align:left}
+.b-detail-tbl td{padding:5px 8px;text-align:right;font-variant-numeric:tabular-nums;
+  border-bottom:1px solid var(--bg3);color:var(--text)}
+.b-detail-tbl td:first-child{text-align:left;color:var(--text2)}
+
+/* ── ローディング ── */
+#overlay{
+  position:fixed;inset:0;background:rgba(248,247,245,.92);
+  display:flex;align-items:center;justify-content:center;
+  z-index:9999;flex-direction:column;gap:14px;transition:opacity .25s;
+}
+#overlay.hidden{opacity:0;pointer-events:none}
+.spin{width:28px;height:28px;border:2.5px solid var(--border2);
+  border-top-color:var(--brand);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.load-msg{color:var(--text3);font-size:12px}
+
+/* ── エラー ── */
+.err{background:var(--c-neg-bg);border:1px solid var(--c-neg);border-radius:8px;
+  padding:10px 14px;color:var(--c-neg);font-size:12px;margin-bottom:14px;display:none}
+
+/* ── KPI ヘルプボタン・ポップアップ ── */
+.kpi-help-btn{
+  position:absolute;top:9px;right:9px;
+  width:17px;height:17px;border-radius:50%;
+  background:var(--border2);color:var(--text3);
+  font-size:10px;font-weight:700;line-height:17px;text-align:center;
+  cursor:pointer;border:none;padding:0;font-family:inherit;
+  transition:all .15s;flex-shrink:0;
+}
+.kpi-help-btn:hover{background:var(--brand);color:#fff}
+
+/* overlay */
+.kpi-popup-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.3);
+  z-index:10000;display:flex;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity .2s;
+}
+.kpi-popup-overlay.show{opacity:1;pointer-events:all}
+
+/* モーダル本体 */
+.kpi-popup{
+  background:#fff;border-radius:14px;
+  width:100%;max-width:440px;max-height:88vh;overflow-y:auto;
+  box-shadow:0 12px 48px rgba(0,0,0,.22);
+  transform:translateY(10px);transition:transform .22s;
+}
+.kpi-popup-overlay.show .kpi-popup{transform:translateY(0)}
+
+/* ヘッダー */
+.kpi-popup-hdr{
+  display:flex;align-items:flex-start;gap:12px;
+  padding:20px 20px 16px;border-bottom:1px solid var(--border);
+}
+.kpi-popup-icon{
+  width:36px;height:36px;border-radius:8px;background:var(--brand-light);
+  display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;
+}
+.kpi-popup-hdr-text{flex:1}
+.kpi-popup-title{font-size:15px;font-weight:600;color:var(--text);line-height:1.3}
+.kpi-popup-subtitle{font-size:11px;color:var(--text3);margin-top:2px}
+.kpi-popup-close{
+  width:26px;height:26px;border-radius:50%;border:none;background:var(--bg3);
+  color:var(--text2);font-size:13px;cursor:pointer;line-height:26px;text-align:center;
+  transition:background .15s;flex-shrink:0;margin-top:2px;
+}
+.kpi-popup-close:hover{background:var(--brand);color:#fff}
+
+/* 現在値バナー */
+.kpi-popup-current{
+  margin:14px 20px;padding:12px 16px;
+  background:var(--brand-light);border-radius:8px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.kpi-popup-current-label{font-size:11px;color:var(--brand);font-weight:500}
+.kpi-popup-current-val{font-size:18px;font-weight:700;color:var(--brand);font-variant-numeric:tabular-nums}
+
+/* セクション */
+.kpi-popup-section{padding:0 20px 14px}
+.kpi-popup-sec-title{
+  font-size:10px;font-weight:600;color:var(--text4);letter-spacing:.08em;
+  text-transform:uppercase;margin-bottom:8px;
+  display:flex;align-items:center;gap:6px;
+}
+.kpi-popup-sec-title::before{
+  content:'';display:inline-block;width:3px;height:12px;
+  background:var(--brand);border-radius:2px;
+}
+
+/* データ出典カード */
+.kpi-source-card{
+  background:var(--bg3);border:1px solid var(--border);border-radius:8px;
+  padding:10px 14px;margin-bottom:8px;
+}
+.kpi-source-card-title{font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.kpi-source-tags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px}
+.kpi-source-tag{
+  font-size:10px;padding:2px 8px;border-radius:4px;font-weight:500;
+  background:#E6F1FB;color:#185FA5;
+}
+.kpi-source-tag.cond{background:#FEF6E4;color:#8B5E00}
+.kpi-source-tag.note{background:var(--border);color:var(--text2)}
+.kpi-source-link{
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:11px;color:var(--brand);text-decoration:none;
+  padding:4px 10px;border:1px solid var(--brand-mid);border-radius:5px;
+  transition:all .15s;background:#fff;
+}
+.kpi-source-link:hover{background:var(--brand);color:#fff;border-color:var(--brand)}
+
+/* 計算式 */
+.kpi-formula-block{
+  background:#1A1A18;border-radius:8px;padding:14px 16px;
+  font-family:'Courier New',monospace;font-size:12px;color:#E8E6E0;line-height:1.9;
+}
+.kpi-formula-block .hl{color:#FF8A80}
+.kpi-formula-block .op{color:#80CBC4}
+.kpi-formula-block .kw{color:#FFD54F}
+
+/* 補足 */
+.kpi-note-box{
+  background:#FEF9F0;border:1px solid #F5D78A;border-radius:8px;
+  padding:10px 14px;font-size:12px;color:#7A5A00;line-height:1.65;
+  display:flex;gap:8px;
+}
+.kpi-note-box::before{content:'💡';flex-shrink:0}
+
+/* フッター */
+.kpi-popup-footer{
+  padding:12px 20px;border-top:1px solid var(--border);
+  font-size:11px;color:var(--text4);text-align:right;
+}
+</style>
+</head>
+<body>
+
+
+<!-- KPI ヘルプポップアップ -->
+<div class="kpi-popup-overlay" id="kpi-popup-overlay" onclick="closeKpiPopup(event)">
+  <div class="kpi-popup">
+    <!-- ヘッダー -->
+    <div class="kpi-popup-hdr">
+      <div class="kpi-popup-icon" id="kpi-popup-icon">📊</div>
+      <div class="kpi-popup-hdr-text">
+        <div class="kpi-popup-title" id="kpi-popup-title">—</div>
+        <div class="kpi-popup-subtitle" id="kpi-popup-subtitle">—</div>
+      </div>
+      <button class="kpi-popup-close" onclick="document.getElementById('kpi-popup-overlay').classList.remove('show')">✕</button>
+    </div>
+    <!-- 現在値 -->
+    <div class="kpi-popup-current">
+      <div class="kpi-popup-current-label">現在値</div>
+      <div class="kpi-popup-current-val" id="kpi-popup-current-val">—</div>
+    </div>
+    <!-- データ出典 -->
+    <div class="kpi-popup-section">
+      <div class="kpi-popup-sec-title">データ出典</div>
+      <div id="kpi-popup-sources"></div>
+    </div>
+    <!-- 計算方法 -->
+    <div class="kpi-popup-section">
+      <div class="kpi-popup-sec-title">計算方法</div>
+      <div class="kpi-formula-block" id="kpi-popup-formula"></div>
+    </div>
+    <!-- 補足 -->
+    <div class="kpi-popup-section" id="kpi-popup-note-wrap">
+      <div class="kpi-popup-sec-title">補足</div>
+      <div class="kpi-note-box" id="kpi-popup-note"></div>
+    </div>
+    <div class="kpi-popup-footer">Douyin電商羅盤 データ基準</div>
+  </div>
+</div>
+<div id="overlay">
+  <div class="spin"></div>
+  <div class="load-msg" id="load-msg">読み込み中...</div>
+</div>
+
+<div class="topbar">
+  <div class="logo">
+    <div class="logo-mark" id="logo-icon">FJ</div>
+    <div>
+      <div class="logo-title" id="logo-title">FindJapan 越境EC運営レポート</div>
+      <div class="logo-sub" id="logo-sub" style="display:none"></div>
+    </div>
+  </div>
+  <div class="controls">
+    <select id="sel-store" onchange="onStoreChange()">
+      <option value="">店舗を選択</option>
+    </select>
+    <select id="sel-month" onchange="onMonthChange()">
+      <option value="">月を選択</option>
+    </select>
+    <span class="cur-label">RMB</span>
+    <button onclick="reloadAll()">↻ 更新</button>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('compass')">コンパス</button>
+  <button class="tab"        onclick="switchTab('ledger')">月次報告</button>
+</div>
+
+<div class="main">
+  <div class="err" id="err"></div>
+
+  <!-- ===== 羅盤タブ ===== -->
+  <div class="tab-content active" id="tab-compass">
+
+    <div class="kpi-row" id="compass-kpi">
+      <div class="kpi"><div class="kpi-label">GMV（成交金額）</div><div class="kpi-val dim">—</div></div>
+      <div class="kpi"><div class="kpi-label">決済金額</div><div class="kpi-val dim">—</div></div>
+      <div class="kpi"><div class="kpi-label">投放消耗（広告費）</div><div class="kpi-val dim">—</div></div>
+      <div class="kpi"><div class="kpi-label">総合費比</div><div class="kpi-val dim">—</div></div>
+      <div class="kpi"><div class="kpi-label">総合ROAS</div><div class="kpi-val dim">—</div></div>
+      <div class="kpi"><div class="kpi-label">平均退款率</div><div class="kpi-val dim">—</div></div>
+    </div>
+
+    <div class="row2">
+      <div class="card">
+        <div class="card-title">日次 GMV・投放消耗 推移</div>
+        <div class="chart-h200"><canvas id="c-daily-gmv"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">日次 ROAS 推移</div>
+        <div class="chart-h200"><canvas id="c-daily-roas"></canvas></div>
+      </div>
+    </div>
+
+    <div class="section">チャネル別比較分析</div>
+
+    <div class="row3" style="margin-bottom:14px">
+      <div class="card">
+        <div class="card-title">ROAS 比較</div>
+        <div id="ch-roas-bars" class="ch-bar-wrap"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">費比（ROI逆数）比較</div>
+        <div id="ch-fee-bars" class="ch-bar-wrap"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">GMV 構成比</div>
+        <div class="chart-h180"><canvas id="c-ch-gmv-pie"></canvas></div>
+      </div>
+    </div>
+
+    <div class="row2" style="margin-bottom:14px">
+      <div class="card">
+        <div class="card-title">チャネル別 ROAS・費比チャート</div>
+        <div class="chart-h240"><canvas id="c-ch-compare"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">チャネル別 投放消耗構成</div>
+        <div class="chart-h240"><canvas id="c-ch-spend-pie"></canvas></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-title">チャネル別パフォーマンス詳細</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>チャネル</th>
+              <th>GMV</th><th>決済金額</th><th>投放消耗</th>
+              <th>ROAS</th><th>費比</th>
+              <th>GMV構成比</th><th>広告費構成比</th>
+              <th>判定</th>
+            </tr>
+          </thead>
+          <tbody id="ch-tbody"></tbody>
+          <tfoot id="ch-tfoot"></tfoot>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">週次詳細テーブル</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>週</th><th>期間</th><th>GMV</th><th>決済金額</th>
+              <th>投放消耗</th><th>ROAS</th><th>費比</th><th>退款率</th>
+            </tr>
+          </thead>
+          <tbody id="daily-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /compass -->
+
+  <!-- ===== 帳簿タブ (案B ライトミニマル) ===== -->
+  <div class="tab-content" id="tab-ledger">
+
+    <div class="b-kpi-row" id="ledger-kpi">
+      <div class="b-kpi"><div class="b-kpi-label">最新月 売上</div><div class="b-kpi-val">—</div><div class="b-kpi-sub">RMB</div></div>
+      <div class="b-kpi"><div class="b-kpi-label">粗利</div><div class="b-kpi-val">—</div></div>
+      <div class="b-kpi"><div class="b-kpi-label">粗利率</div><div class="b-kpi-val">—</div><div class="b-kpi-sub">目標 35%</div></div>
+      <div class="b-kpi"><div class="b-kpi-label">営業利益</div><div class="b-kpi-val">—</div></div>
+      <div class="b-kpi"><div class="b-kpi-label">営業利益率</div><div class="b-kpi-val">—</div></div>
+    </div>
+
+    <!-- 損益構造(1/3) ＋ ドーナツ(1/3) ＋ 内訳数値(1/3) -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px">
+      <div class="b-card">
+        <div class="b-card-title">損益構造（最新月）</div>
+        <div class="chart-h280"><canvas id="c-wf-chart"></canvas></div>
+      </div>
+      <div class="b-card" style="display:flex;flex-direction:column;align-items:center">
+        <div class="b-card-title" style="width:100%">原価・費用 構成比</div>
+        <div style="position:relative;width:100%;height:320px;margin:8px 0">
+          <canvas id="c-combined-donut"></canvas>
+        </div>
+        <div id="b-donut-legend" style="display:none"></div>
+      </div>
+      <div class="b-card">
+        <div class="b-card-title">原価・費用 内訳数値</div>
+        <div id="b-breakdown-table"></div>
+      </div>
+    </div>
+
+    <!-- 月次損益明細 202603〜202702 -->
+    <div class="b-card" style="margin-bottom:14px">
+      <div class="b-card-title">月次損益明細（202603 〜 202702）</div>
+      <div class="tbl-wrap">
+        <table class="b-pl-table">
+          <thead><tr id="pl-thead"></tr></thead>
+          <tbody id="pl-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+<!-- 原価・費用内訳カード削除済み -->
+
+  </div><!-- /ledger -->
+</div><!-- /main -->
+
+<script>
+// ================================================================
+// ★ GAS URL（デプロイ後に入力）
+// ================================================================
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwUt_k-UVsjAX03ysZgBTaw9JjIDUtqSp_3CgxcymRz8ExjLt5R0FuMZPaOM2_AF-Uy/exec';
+// ================================================================
+
+const S = { store: null, month: null, fileId: '', fileName: '', compass: null, ledger: null };
+const charts = {};
+
+// ── 初期化（直列実行）──────────────────────────────────────────
+async function init() {
+  try {
+    // 1. 店舗一覧
+    loading('店舗情報を取得中...');
+    const stores = await api('stores');
+    if (!stores.length) throw new Error('店舗データが取得できません');
+
+    const ss = document.getElementById('sel-store');
+    ss.innerHTML = stores.map(s => `<option value="${s.id}">${s.label}</option>`).join('');
+    S.store = stores[0].id;
+    setLogoFromStore(stores[0]);
+    updateTabVisibility();
+
+    // 2. 月一覧
+    loading('月一覧を取得中...');
+    const months = await api('months');
+    const sm = document.getElementById('sel-month');
+    // months配列をSTATEに保持
+    S.monthsData = months;
+    if (months.length) {
+      sm.innerHTML = months.map(m =>
+        `<option value="${m.month}" data-fileid="${m.fileId||''}" data-filename="${m.fileName||''}">${m.label}</option>`
+      ).join('');
+      S.month    = months[0].month;
+      S.fileId   = months[0].fileId   || '';
+      S.fileName = months[0].fileName || '';
+    } else {
+      sm.innerHTML = '<option value="">月データなし</option>';
+    }
+
+    // 3. 羅盤データ
+    if (S.month) {
+      loading('羅盤データを取得中...');
+      await loadCompass();
+    }
+
+    // 4. 帳簿データ
+    loading('帳簿データを取得中...');
+    await loadLedger();
+
+  } catch(e) {
+    showErr(e.message);
+  } finally {
+    hideLoading();
+  }
+}
+
+// ── データ取得 ─────────────────────────────────────────────────
+async function loadCompass() {
+  const sheetName = S.store ? S.store.split('_')[0] : 'Fujiko';
+  const data = await api('compass', { month: S.month, sheet: sheetName });
+  if (data.error) throw new Error('羅盤: ' + data.error);
+  S.compass = data;
+  renderCompass(data);
+}
+
+async function loadLedger() {
+  if (!S.store) return;
+  const data = await api('ledger', { store: S.store });
+  if (data.error) throw new Error('帳簿: ' + data.error);
+  S.ledger = data;
+  renderLedger(data);
+}
+
+// ── イベント ───────────────────────────────────────────────────
+async function onStoreChange() {
+  S.store = document.getElementById('sel-store').value;
+  updateTabVisibility();
+  loading('データ更新中...');
+  try {
+    if (!isRedStore()) await loadCompass();
+    await loadLedger();
+  } catch(e) { showErr(e.message); } finally { hideLoading(); }
+}
+
+async function onMonthChange() {
+  const opt = document.getElementById('sel-month').selectedOptions[0];
+  S.month    = opt.value;
+  S.fileId   = opt.dataset.fileid   || '';
+  S.fileName = opt.dataset.filename || '';
+  loading('羅盤データ更新中...');
+  try { await loadCompass(); } catch(e) { showErr(e.message); } finally { hideLoading(); }
+}
+
+async function reloadAll() {
+  loading('再読み込み中...');
+  try { if (!isRedStore()) await loadCompass(); await loadLedger(); }
+  catch(e) { showErr(e.message); } finally { hideLoading(); }
+}
+
+function isRedStore() {
+  return S.store && S.store.includes('RED');
+}
+
+function updateTabVisibility() {
+  const compassTab = document.querySelector('.tab[onclick*="compass"]');
+  if (compassTab) compassTab.style.display = isRedStore() ? 'none' : '';
+  if (isRedStore() && document.getElementById('tab-compass').classList.contains('active')) {
+    switchTab('ledger');
+  }
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', ['compass','ledger'][i] === name));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+}
+
+
+
+// ── 羅盤レンダリング ───────────────────────────────────────────
+function renderCompass(d) {
+  const s = d.summary;
+  const roasCls = s.roas >= 3 ? 'b-good' : s.roas >= 2 ? 'b-warn' : 'b-bad';
+  const feeCls  = s.feeRatio <= 0.3 ? 'b-good' : s.feeRatio <= 0.4 ? 'b-warn' : 'b-bad';
+
+  // ポップアップ用に現在値・ファイルURLをキャッシュ
+  KPI_CURRENT.gmv      = fmtN(s.gmv) + ' RMB';
+  KPI_CURRENT.settle   = fmtN(s.settle) + ' RMB';
+  KPI_CURRENT.invest   = fmtN(s.invest) + ' RMB';
+  KPI_CURRENT.feeRatio = pct(s.feeRatio);
+  KPI_CURRENT.roas     = s.roas.toFixed(2) + 'x';
+  KPI_CURRENT.refund   = pct(s.avgRefund);
+  // 羅盤ファイルのURL（Google Sheetsとして開く）
+  KPI_CURRENT.compassUrl      = S.fileId ? `https://docs.google.com/spreadsheets/d/${S.fileId}/edit` : '';
+  KPI_CURRENT.compassFileName = S.fileName || ('収支分析' + (S.month||''));
+
+  document.getElementById('compass-kpi').innerHTML = `
+    <div class="kpi"><button class="kpi-help-btn" onclick="showKpiPopup('gmv')">?</button><div class="kpi-label">GMV（成交金額）</div><div class="kpi-val num" style="color:var(--brand)">${fmtN(s.gmv)}</div><div class="kpi-sub">月次合計 RMB</div></div>
+    <div class="kpi"><button class="kpi-help-btn" onclick="showKpiPopup('settle')">?</button><div class="kpi-label">決済金額</div><div class="kpi-val num" style="color:var(--text)">${fmtN(s.settle)}</div><div class="kpi-sub">結算金額</div></div>
+    <div class="kpi"><button class="kpi-help-btn" onclick="showKpiPopup('invest')">?</button><div class="kpi-label">投放消耗（広告費）</div><div class="kpi-val num" style="color:var(--text)">${fmtN(s.invest)}</div><div class="kpi-sub">月次合計</div></div>
+    <div class="kpi"><button class="kpi-help-btn" onclick="showKpiPopup('feeRatio')">?</button><div class="kpi-label">総合費比</div><div class="kpi-val ${feeCls}">${pct(s.feeRatio)}</div><div class="kpi-sub">目標 ≤30%</div></div>
+    <div class="kpi"><button class="kpi-help-btn" onclick="showKpiPopup('roas')">?</button><div class="kpi-label">総合ROAS</div><div class="kpi-val ${roasCls}">${s.roas.toFixed(2)}x</div><div class="kpi-sub">目標 ≥3.0x</div></div>
+    <div class="kpi"><button class="kpi-help-btn" onclick="showKpiPopup('refund')">?</button><div class="kpi-label">平均退款率</div><div class="kpi-val ${s.avgRefund<=0.1?'b-good':s.avgRefund<=0.2?'b-warn':'b-bad'}">${pct(s.avgRefund)}</div><div class="kpi-sub">月次平均</div></div>
+  `;
+
+  // 日次チャート
+  const labels = d.daily.map(r => r.date.slice(5));
+  mkBarLine('c-daily-gmv', labels,
+    [{ label:'GMV', data:d.daily.map(r=>r.gmv), bg:'rgba(192,0,0,.18)', border:'#C00000' },
+     { label:'投放消耗', data:d.daily.map(r=>r.invest), bg:'rgba(26,86,160,.25)', border:'#1A56A0' }]);
+  mkLine('c-daily-roas', labels,
+    [{ label:'ROAS', data:d.daily.map(r=>+r.roas.toFixed(2)), color:'#EA580C' }],
+    { refLine: 3, refLabel:'目標3.0x' });
+
+  // ── チャネル比較 ──
+  const chs = d.channels.filter(ch => ch.invest > 0); // 広告費ありのみ
+  const COLORS = ['#C00000','#1A56A0','#EA580C','#8B5E00','#534AB7'];
+
+  // ROASバー
+  const maxRoas = Math.max(...chs.map(c=>c.roas), 3) * 1.1;
+  document.getElementById('ch-roas-bars').innerHTML = chs.map((ch,i) => `
+    <div class="ch-bar-row">
+      <div class="ch-bar-label">${ch.name}</div>
+      <div class="ch-bar-track"><div class="ch-bar-fill" style="width:${(ch.roas/maxRoas*100).toFixed(1)}%;background:${COLORS[i%COLORS.length]}"></div></div>
+      <div class="ch-bar-val" style="color:${ch.roas>=3?'var(--green)':ch.roas>=2?'var(--yellow)':'var(--red)'}">${ch.roas.toFixed(2)}x</div>
+    </div>
+  `).join('') + `<div class="ch-bar-row"><div class="ch-bar-label" style="color:var(--text3)">目標3.0x</div>
+    <div class="ch-bar-track"><div class="ch-bar-fill" style="width:${(3/maxRoas*100).toFixed(1)}%;background:var(--red);opacity:.5"></div></div>
+    <div class="ch-bar-val" style="color:var(--text3)">3.00x</div></div>`;
+
+  // 費比バー
+  const maxFee = Math.max(...chs.map(c=>c.feeRatio), 0.3) * 1.1;
+  document.getElementById('ch-fee-bars').innerHTML = chs.map((ch,i) => `
+    <div class="ch-bar-row">
+      <div class="ch-bar-label">${ch.name}</div>
+      <div class="ch-bar-track"><div class="ch-bar-fill" style="width:${(ch.feeRatio/maxFee*100).toFixed(1)}%;background:${COLORS[i%COLORS.length]}"></div></div>
+      <div class="ch-bar-val" style="color:${ch.feeRatio<=0.3?'var(--green)':ch.feeRatio<=0.4?'var(--yellow)':'var(--red)'}">${pct(ch.feeRatio)}</div>
+    </div>
+  `).join('') + `<div class="ch-bar-row"><div class="ch-bar-label" style="color:var(--text3)">目標30%</div>
+    <div class="ch-bar-track"><div class="ch-bar-fill" style="width:${(0.3/maxFee*100).toFixed(1)}%;background:var(--green);opacity:.4"></div></div>
+    <div class="ch-bar-val" style="color:var(--text3)">30.0%</div></div>`;
+
+  // GMV構成比ドーナツ
+  mkDonut('c-ch-gmv-pie',
+    chs.map(c=>c.name), chs.map(c=>Math.round(c.gmv)), COLORS);
+
+  // 広告費構成比ドーナツ
+  mkDonut('c-ch-spend-pie',
+    chs.map(c=>c.name), chs.map(c=>Math.round(c.invest)), COLORS);
+
+  // ROAS・費比比較棒グラフ（grouped）
+  mkGroupedBar('c-ch-compare', chs.map(c=>c.name), [
+    { label:'ROAS', data:chs.map(c=>+c.roas.toFixed(2)), bg:'rgba(192,0,0,.6)', border:'#C00000', yAxisID:'yRoas' },
+    { label:'費比(%)', data:chs.map(c=>+(c.feeRatio*100).toFixed(1)), bg:'rgba(26,86,160,.55)', border:'#1A56A0', yAxisID:'yFee' },
+  ], { refLine:3 });
+
+  // チャネル詳細テーブル
+  const totalGmv = d.channels.reduce((a,c)=>a+c.gmv,0)||1;
+  const totalAd  = d.channels.reduce((a,c)=>a+c.invest,0)||1;
+  document.getElementById('ch-tbody').innerHTML = d.channels.map(ch => {
+    const rc = ch.roas>=3?'b-good':ch.roas>=2?'b-warn':'b-bad';
+    const bl = ch.roas>=3?'badge-good':ch.roas>=2?'badge-warn':'badge-bad';
+    const bt = ch.invest===0?'広告なし':ch.roas>=3?'目標達成':ch.roas>=2?'要改善':'未達成';
+    return `<tr>
+      <td>${ch.name}</td>
+      <td class="num">${fmtN(ch.gmv)}</td><td class="num">${fmtN(ch.settle)}</td>
+      <td class="num">${fmtN(ch.invest)}</td>
+      <td class="${rc} num">${ch.invest>0?ch.roas.toFixed(2)+'x':'—'}</td>
+      <td>${ch.invest>0?pct(ch.feeRatio):'—'}</td>
+      <td>${pct(ch.gmv/totalGmv)}</td>
+      <td>${ch.invest>0?pct(ch.invest/totalAd):'—'}</td>
+      <td><span class="badge ${bl}">${bt}</span></td>
+    </tr>`;
+  }).join('');
+  document.getElementById('ch-tfoot').innerHTML = `<tr>
+    <td>合計</td><td class="num">${fmtN(s.gmv)}</td><td class="num">${fmtN(s.settle)}</td>
+    <td class="num">${fmtN(s.invest)}</td>
+    <td class="${s.roas>=3?'b-good':s.roas>=2?'b-warn':'b-bad'} num">${s.roas.toFixed(2)}x</td>
+    <td>${pct(s.feeRatio)}</td><td>100%</td><td>100%</td><td></td>
+  </tr>`;
+
+  // 週次集計テーブル
+  const weekly = [];
+  d.daily.forEach(r => {
+    const dt = new Date(r.date);
+    const day = dt.getDay(); // 0=日
+    // 月曜始まりの週番号
+    const mon = new Date(dt); mon.setDate(dt.getDate() - ((day+6)%7));
+    const wkey = mon.toISOString().slice(0,10);
+    let w = weekly.find(x=>x.key===wkey);
+    if (!w) { w={key:wkey,start:r.date,end:r.date,gmv:0,settle:0,invest:0,refundSum:0,days:0}; weekly.push(w); }
+    w.end=r.date; w.gmv+=r.gmv; w.settle+=r.settle; w.invest+=r.invest;
+    w.refundSum+=r.refund; w.days++;
+  });
+  document.getElementById('daily-tbody').innerHTML = weekly.map((w,i) => {
+    const roas = w.invest>0 ? w.gmv/w.invest : 0;
+    const feeR = w.gmv>0 ? w.invest/w.gmv : 0;
+    const refund = w.days>0 ? w.refundSum/w.days : 0;
+    const rc = roas>=3?'b-good':roas>=2?'b-warn':'b-bad';
+    const start = w.start.slice(5); const end = w.end.slice(5);
+    return `<tr>
+      <td>W${i+1}</td>
+      <td style="color:var(--text3);font-size:11px">${start}〜${end}</td>
+      <td class="num">${fmtN(w.gmv)}</td><td class="num">${fmtN(w.settle)}</td>
+      <td class="num">${fmtN(w.invest)}</td>
+      <td class="${rc} num">${roas>0?roas.toFixed(2)+'x':'—'}</td>
+      <td>${pct(feeR)}</td><td>${pct(refund)}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── 帳簿レンダリング (案B) ──────────────────────────────────────
+function renderLedger(d) {
+  if (!d.rows || d.rows.length === 0) {
+    document.getElementById('ledger-kpi').innerHTML = '<div class="b-kpi"><div class="b-kpi-val">データなし</div></div>';
+    return;
+  }
+  const rows = d.rows;
+  const latest = rows[rows.length - 1];
+
+  // ── KPI ──
+  const gmCls = (latest.grossMargin||0)>=0.35?'b-good':(latest.grossMargin||0)>=0.2?'b-warn':'b-bad';
+  const opCls = (latest.opMargin||0)>=0.1?'b-good':(latest.opMargin||0)>=0?'b-warn':'b-bad';
+  document.getElementById('ledger-kpi').innerHTML = `
+    <div class="b-kpi"><div class="b-kpi-label">売上合計</div><div class="b-kpi-val num" style="color:#C00000">${fmtV(latest.sales)}</div><div class="b-kpi-sub">${latest.month} / RMB</div></div>
+    <div class="b-kpi"><div class="b-kpi-label">原価合計</div><div class="b-kpi-val num" style="color:#3D3D3B">${fmtV(latest.cogs)}</div><div class="b-kpi-sub">売上比 ${latest.sales>0?pct(v(latest.cogs)/latest.sales):'—'}</div></div>
+    <div class="b-kpi"><div class="b-kpi-label">粗利</div><div class="b-kpi-val num" style="color:#C00000">${fmtV(latest.grossProfit)}</div><div class="b-kpi-sub">粗利率 ${latest.grossMargin!=null?pct(latest.grossMargin):'—'}</div></div>
+    <div class="b-kpi"><div class="b-kpi-label">費用合計</div><div class="b-kpi-val num" style="color:#3D3D3B">${fmtV(latest.expense)}</div><div class="b-kpi-sub">売上比 ${latest.sales>0?pct(v(latest.expense)/latest.sales):'—'}</div></div>
+    <div class="b-kpi"><div class="b-kpi-label">営業利益</div><div class="b-kpi-val num" style="${latest.opProfit>=0?'color:#C00000':'color:#C00000'}">${fmtV(latest.opProfit)}</div><div class="b-kpi-sub">利益率 ${latest.opMargin!=null?pct(latest.opMargin):'—'}</div></div>
+  `;
+
+  const sl = v(latest.sales);
+  const gp = v(latest.grossProfit);
+  const op = v(latest.opProfit);
+
+  // ── ウォーターフォール（SVGバー）──
+  const wfItems = [
+    { name:'売上',     val: sl,                 color:'#C00000', offset: 0,               width: sl },
+    { name:'原価',     val:-v(latest.cogs),     color:'#5A5A58', offset: gp,              width: v(latest.cogs) },
+    { name:'粗利',     val: gp,                 color:'#C00000', offset: 0,               width: gp },
+    { name:'費用',     val:-v(latest.expense),  color:'#5A5A58', offset:Math.max(op,0),   width: v(latest.expense) },
+    { name:'営業利益', val: op,                 color:'#C00000', offset:0,                width:Math.abs(op) },
+  ];
+  // 縦ウォーターフォール（Chart.js floating bar）
+  mkWaterfall('c-wf-chart',
+    wfItems.map(i=>i.name),
+    wfItems.map(i=>[Math.min(i.offset, i.offset+i.width*(i.val>=0?1:-1)), Math.max(i.offset, i.offset+i.width*(i.val>=0?1:-1))]),
+    wfItems.map(i=>i.color)
+  );
+
+  // ── 統合ドーナツ（原価＋費用） ──
+  const COLORS_COGS_DONUT = ['#C00000','#E57373','#1A56A0','#60A5FA','#1B6B3A','#6EE7B7','#8B5E00'];
+  const COLORS_EXP_DONUT  = ['#534AB7','#8B7FDE','#C4C0F0'];
+  const cogsItems = [
+    ['商品原価（買取）', latest.cogsBuy],
+    ['商品原価（委託）', latest.cogsConst],
+    ['サンプル／景品',   latest.sample],
+    ['FEE',             latest.fee],
+    ['ライブ原価',       latest.liveCost],
+    ['リスティング',     latest.listing],
+    ['その他販促費',     latest.otherPromo],
+  ].filter(([,val]) => val != null && val > 0);
+  const expItems = [
+    ['運営人件費', latest.staffCost],
+    ['CS',         latest.cs],
+    ['ライブ人件費', latest.liveSatff],
+  ].filter(([,val]) => val != null && val > 0);
+
+  // 内側：原価合計 vs 費用合計
+  const innerLabels = ['原価合計', '費用合計'];
+  const innerData   = [Math.round(v(latest.cogs)), Math.round(v(latest.expense))];
+  const innerColors = ['#5A5A58', '#534AB7'];
+
+  // 外側：各詳細項目
+  const outerLabels = [...cogsItems.map(([n])=>n), ...expItems.map(([n])=>n)];
+  const outerData   = [...cogsItems.map(([,vv])=>Math.round(vv)), ...expItems.map(([,vv])=>Math.round(vv))];
+  const outerColors = [...COLORS_COGS_DONUT.slice(0, cogsItems.length), ...COLORS_EXP_DONUT.slice(0, expItems.length)];
+
+  mkDoubleDonut('c-combined-donut', innerLabels, innerData, innerColors, outerLabels, outerData, outerColors);
+
+  // 凡例
+  const legendEl = document.getElementById('b-donut-legend');
+  legendEl.innerHTML =
+    '<div style="font-size:9px;font-weight:500;color:#b4b2a9;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px;padding-bottom:3px;border-bottom:0.5px solid #e0ddd5">原価</div>' +
+    cogsItems.map(([name, val], i) =>
+      `<div class="b-legend-item"><div class="b-legend-dot" style="background:${COLORS_COGS_DONUT[i]}"></div><span style="flex:1">${name}</span><span style="color:#5F5E5A;font-variant-numeric:tabular-nums">${sl>0?pct(val/sl):'—'}</span></div>`
+    ).join('') +
+    '<div style="font-size:9px;font-weight:500;color:#b4b2a9;letter-spacing:.08em;text-transform:uppercase;margin:6px 0 4px;padding-bottom:3px;border-bottom:0.5px solid #e0ddd5">費用</div>' +
+    expItems.map(([name, val], i) =>
+      `<div class="b-legend-item"><div class="b-legend-dot" style="background:${COLORS_EXP_DONUT[i]}"></div><span style="flex:1">${name}</span><span style="color:#5F5E5A;font-variant-numeric:tabular-nums">${sl>0?pct(val/sl):'—'}</span></div>`
+    ).join('');
+
+  // ── 月次損益明細（202603〜202702） ──
+  const plRows = [
+    { label:'売上合計',          key:'sales',       cls:'b-total' },
+    { label:'原価合計',          key:'cogs',        cls:'b-total' },
+    { label:'商品原価（買取）',   key:'cogsBuy',     cls:'b-sub' },
+    { label:'商品原価（委託）',   key:'cogsConst',   cls:'b-sub' },
+    { label:'サンプル／景品',     key:'sample',      cls:'b-sub' },
+    { label:'FEE',               key:'fee',         cls:'b-sub' },
+    { label:'ライブ原価',         key:'liveCost',    cls:'b-sub' },
+    { label:'リスティング',       key:'listing',     cls:'b-sub' },
+    { label:'その他販促費',       key:'otherPromo',  cls:'b-sub' },
+    { label:'粗利',               key:'grossProfit', cls:'b-grand', pct:'grossMargin' },
+    { label:'費用合計',           key:'expense',     cls:'b-total' },
+    { label:'運営人件費',         key:'staffCost',   cls:'b-sub' },
+    { label:'CS',                 key:'cs',          cls:'b-sub' },
+    { label:'ライブ人件費',       key:'liveSatff',   cls:'b-sub' },
+    { label:'営業利益',           key:'opProfit',    cls:'b-grand', pct:'opMargin' },
+  ];
+
+  // 全月（202603〜202702）をカバー
+  const ALL_MONTHS = ['202603','202604','202605','202606','202607','202608','202609','202610','202611','202612','202701','202702'];
+  const rowMap = {};
+  rows.forEach(r => { rowMap[r.month] = r; });
+
+  document.getElementById('pl-thead').innerHTML =
+    '<th style="text-align:left;min-width:110px">項目</th>' +
+    ALL_MONTHS.map(m => `<th style="min-width:76px">${m}</th>`).join('') +
+    '<th style="min-width:80px;background:#FEF0F0;color:#C00000;border-left:2px solid #C00000">年度合計</th>';
+
+  document.getElementById('pl-tbody').innerHTML = plRows.map(def => {
+    const anyData = ALL_MONTHS.some(m => rowMap[m] && rowMap[m][def.key] != null && rowMap[m][def.key] !== 0);
+    if (!anyData && def.cls === 'b-sub') return '';
+    const cells = ALL_MONTHS.map(m => {
+      const r = rowMap[m];
+      const val = r ? r[def.key] : null;
+      if (val == null || val === '') return `<td class="b-dim">—</td>`;
+      let cls = '';
+      if (def.cls === 'b-grand') cls = val >= 0 ? 'b-val-pos' : 'b-val-neg';
+      if (def.pct && r) {
+        const p = r[def.pct];
+        const pctCls = def.key==='grossProfit'
+          ? (p>=0.35?'b-good':p>=0.2?'b-warn':'b-bad')
+          : (p>=0.1?'b-good':p>=0?'b-warn':'b-bad');
+        return `<td class="${cls} num">${fmtV(val)}<br><span style="font-size:9px" class="${pctCls}">${pct(p)}</span></td>`;
+      }
+      return `<td class="${cls} num">${fmtV(val)}</td>`;
+    }).join('');
+
+    // 年度合計列
+    let yearTotal = '';
+    if (def.pct && def.key !== 'grossProfit' && def.key !== 'opProfit') {
+      // 純粋な比率行（粗利率・営業利益率など）は合計不要
+      yearTotal = '<td style="background:#FEF0F0;border-left:2px solid #C00000" class="b-dim">—</td>';
+    } else {
+      const sum = ALL_MONTHS.reduce((acc, m) => {
+        const r = rowMap[m];
+        return acc + (r && r[def.key] != null ? (r[def.key] || 0) : 0);
+      }, 0);
+      const hasSomeData = ALL_MONTHS.some(m => rowMap[m] && rowMap[m][def.key] != null && rowMap[m][def.key] !== 0);
+      if (!hasSomeData) {
+        yearTotal = '<td style="background:#FEF0F0;border-left:2px solid #C00000" class="b-dim">—</td>';
+      } else {
+        const cls = def.cls==='b-grand' ? (sum>=0?'b-val-pos':'b-val-neg') : '';
+        yearTotal = `<td style="background:#FEF0F0;border-left:2px solid #C00000;font-weight:600" class="${cls} num">${fmtV(sum)}</td>`;
+      }
+    }
+
+    const tdFirst = def.cls === 'b-sub'
+      ? `<td style="padding-left:16px;color:#888780;font-size:11px">${def.label}</td>`
+      : `<td>${def.label}</td>`;
+    return `<tr class="${def.cls}">${tdFirst}${cells}${yearTotal}</tr>`;
+  }).join('');
+
+  // ── 内訳数値テーブル（3列目）──
+  const cogsTotal = cogsItems.reduce((a,[,vv])=>a+(vv||0),0)||1;
+  const expTotal  = expItems.reduce((a,[,vv])=>a+(vv||0),0)||1;
+  // ドーナツと同じ色配列を使用
+  const COLORS_COGS = COLORS_COGS_DONUT;
+  const COLORS_EXPD = COLORS_EXP_DONUT;
+
+  const mkRow = (name, val, pctSales, pctInner, color) =>
+    `<div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:0.5px solid #F2F0EC">
+       <div style="width:8px;height:8px;border-radius:2px;background:${color};flex-shrink:0"></div>
+       <span style="flex:1;font-size:10px;color:#4A4845">${name}</span>
+       <span style="font-size:10px;font-variant-numeric:tabular-nums;color:#1A1A18;font-weight:500">${fmtV(val)}</span>
+       <span style="font-size:10px;color:#888480;min-width:36px;text-align:right">${pctSales}</span>
+     </div>`;
+
+  let breakdownHtml =
+    `<div style="font-size:9px;font-weight:600;color:#BAB8B3;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">原価</div>` +
+    cogsItems.map(([name,val],i) => mkRow(name, val, sl>0?pct(val/sl):'—', pct(val/cogsTotal), COLORS_COGS[i%COLORS_COGS.length])).join('') +
+    `<div style="font-size:9px;font-weight:600;color:#BAB8B3;letter-spacing:.08em;text-transform:uppercase;margin:8px 0 4px">費用</div>` +
+    expItems.map(([name,val],i) => mkRow(name, val, sl>0?pct(val/sl):'—', pct(val/expTotal), COLORS_EXPD[i%COLORS_EXPD.length])).join('');
+
+  const bdEl = document.getElementById('b-breakdown-table');
+  if (bdEl) bdEl.innerHTML = breakdownHtml;
+
+  // 旧テーブルも更新（残っている場合）
+  const cogsTbody = document.getElementById('cogs-tbody');
+  if (cogsTbody) cogsTbody.innerHTML = cogsItems.map(([name,val]) =>
+    `<tr><td>${name}</td><td class="num">${fmtV(val)}</td><td>${sl>0?pct(val/sl):'—'}</td><td>${pct(val/cogsTotal)}</td></tr>`
+  ).join('') || '<tr><td colspan="4" style="color:#b4b2a9;text-align:center;padding:10px">データなし</td></tr>';
+  const expTbody = document.getElementById('exp-tbody');
+  if (expTbody) expTbody.innerHTML = expItems.map(([name,val]) =>
+    `<tr><td>${name}</td><td class="num">${fmtV(val)}</td><td>${sl>0?pct(val/sl):'—'}</td><td>${pct(val/expTotal)}</td></tr>`
+  ).join('') || '<tr><td colspan="4" style="color:#b4b2a9;text-align:center;padding:10px">データなし</td></tr>';
+}
+
+// ── チャート描画 ───────────────────────────────────────────────
+const BASE_OPT = {
+  responsive:true, maintainAspectRatio:false,
+  plugins:{
+    legend:{ labels:{ color:'#4A4845', font:{size:11}, boxWidth:12 } },
+    tooltip:{ mode:'index', intersect:false }
+  },
+  scales:{
+    x:{ ticks:{ color:'#888480', font:{size:10} }, grid:{ color:'rgba(0,0,0,.04)' } },
+    y:{ ticks:{ color:'#888480', font:{size:10} }, grid:{ color:'rgba(0,0,0,.04)' } },
+  }
+};
+
+function mkBarLine(id, labels, datasets) {
+  const ctx = document.getElementById(id);
+  const ex = Chart.getChart(ctx); if(ex) ex.destroy();
+  new Chart(ctx, {
+    data:{ labels, datasets: datasets.map(ds => ({
+      type:'bar', label:ds.label, data:ds.data,
+      backgroundColor:ds.bg, borderColor:ds.border, borderWidth:1, borderRadius:3
+    }))},
+    options:{ ...BASE_OPT }
+  });
+}
+
+function mkBar(id, labels, datasets) {
+  const ctx = document.getElementById(id);
+  const ex = Chart.getChart(ctx); if(ex) ex.destroy();
+  new Chart(ctx, {
+    type:'bar',
+    data:{ labels, datasets: datasets.map(ds => ({
+      label:ds.label, data:ds.data, backgroundColor:ds.bg, borderColor:ds.border,
+      borderWidth:1, borderRadius:3
+    }))},
+    options:{ ...BASE_OPT }
+  });
+}
+
+function mkGroupedBar(id, labels, datasets, opts={}) {
+  const ctx = document.getElementById(id);
+  const ex = Chart.getChart(ctx); if(ex) ex.destroy();
+  const dsets = datasets.map(ds=>({
+    label:ds.label, data:ds.data, backgroundColor:ds.bg, borderColor:ds.border,
+    borderWidth:1, borderRadius:3, yAxisID:ds.yAxisID||'y'
+  }));
+  if (opts.refLine) {
+    dsets.push({
+      type:'line', label:'目標3.0x',
+      data: new Array(labels.length).fill(opts.refLine),
+      borderColor:'rgba(192,0,0,.7)', borderWidth:1.5, borderDash:[4,3],
+      pointRadius:0, fill:false, yAxisID:'yRoas'
+    });
+  }
+  new Chart(ctx, {
+    type:'bar',
+    data:{ labels, datasets: dsets },
+    options:{
+      ...BASE_OPT,
+      scales:{
+        x:{ ...BASE_OPT.scales.x },
+        yRoas:{
+          type:'linear', position:'left',
+          ticks:{ color:'#888480', font:{size:10}, callback:v=>v+'x' },
+          grid:{ color:'rgba(0,0,0,.04)' },
+        },
+        yFee:{
+          type:'linear', position:'right',
+          ticks:{ color:'#888480', font:{size:10}, callback:v=>v+'%' },
+          grid:{ drawOnChartArea:false },
+        }
+      }
+    }
+  });
+}
+
+function mkDoubleDonut(id, innerLabels, innerData, innerColors, outerLabels, outerData, outerColors) {
+  const ctx = document.getElementById(id);
+  const ex = Chart.getChart(ctx); if(ex) ex.destroy();
+  const outerTotal = outerData.reduce((a,b)=>a+b,0)||1;
+  const innerTotal = innerData.reduce((a,b)=>a+b,0)||1;
+
+  // 外側ラベルの位置をスライスの外に出す
+  new Chart(ctx, {
+    type:'doughnut',
+    plugins:[ChartDataLabels],
+    data:{
+      labels: [...innerLabels, ...outerLabels],
+      datasets:[
+        {
+          // 内側：原価合計 vs 費用合計（太め・中心近く）
+          label:'分類',
+          data: innerData,
+          backgroundColor: innerColors.map(c=>c+'ee'),
+          borderColor:'#fff', borderWidth:4,
+          cutout:'8%',
+          radius:'54%',
+        },
+        {
+          // 外側：詳細項目（太め・外周）
+          label:'内訳',
+          data: outerData,
+          backgroundColor: outerColors.map(c=>c+'dd'),
+          borderColor:'#fff', borderWidth:2,
+          cutout:'56%',
+          radius:'100%',
+        }
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      layout:{ padding:{ top:36, bottom:36, left:36, right:36 } },
+      plugins:{
+        legend:{ display:false },
+        tooltip:{
+          callbacks:{
+            title:(items) => {
+              const it = items[0];
+              return it.datasetIndex===0 ? innerLabels[it.dataIndex] : outerLabels[it.dataIndex];
+            },
+            label:(item) => {
+              const total = item.datasetIndex===0 ? innerTotal : outerTotal;
+              return '  ' + Math.round(item.raw).toLocaleString('ja-JP') + ' RMB  (' + (item.raw/total*100).toFixed(1) + '%)';
+            }
+          }
+        },
+        datalabels:{
+          display:(ctx) => {
+            const total = ctx.datasetIndex===0 ? innerTotal : outerTotal;
+            return (ctx.dataset.data[ctx.dataIndex]/total*100) >= 6;
+          },
+          color:(ctx) => ctx.datasetIndex===0 ? '#fff' : '#333',
+          font:(ctx) => ({
+            size: ctx.datasetIndex===0 ? 11 : 9,
+            weight:'600'
+          }),
+          anchor:(ctx) => ctx.datasetIndex===0 ? 'center' : 'end',
+          align:(ctx)  => ctx.datasetIndex===0 ? 'center' : 'end',
+          offset:(ctx) => ctx.datasetIndex===0 ? 0 : 8,
+          textAlign:'center',
+          formatter:(val, ctx) => {
+            const total = ctx.datasetIndex===0 ? innerTotal : outerTotal;
+            const p = (val/total*100).toFixed(1);
+            if (ctx.datasetIndex===0) {
+              return innerLabels[ctx.dataIndex].replace('合計','') + '\n' + p + '%';
+            }
+            const name = outerLabels[ctx.dataIndex];
+            return name.length > 6 ? name.slice(0,6)+'\n'+p+'%' : name+'\n'+p+'%';
+          },
+          clamp:true,
+        }
+      }
+    }
+  });
+}
+
+function mkDonut(id, labels, data, colors) {
+  const ctx = document.getElementById(id);
+  const ex = Chart.getChart(ctx); if(ex) ex.destroy();
+  const total = data.reduce((a,b)=>a+b,0)||1;
+  const showLabels = id === 'c-combined-donut';
+  new Chart(ctx, {
+    type:'doughnut',
+    plugins: showLabels ? [ChartDataLabels] : [],
+    data:{ labels, datasets:[{ data, backgroundColor:colors.map(c=>c+'dd'), borderColor:'#fff', borderWidth:2 }]},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      cutout:'55%',
+      plugins:{
+        legend:{ display:false },
+        tooltip:{ callbacks:{ label: ctx => ` ${ctx.label}: ${Math.round(ctx.raw).toLocaleString('ja-JP')} (${(ctx.raw/total*100).toFixed(1)}%)` } },
+        datalabels: showLabels ? {
+          color:'#fff',
+          font:{ size:10, weight:'600' },
+          formatter: (val) => {
+            const p = val/total*100;
+            return p >= 5 ? p.toFixed(1)+'%' : '';
+          },
+          anchor:'center',
+          align:'center',
+        } : { display: false }
+      }
+    }
+  });
+}
+
+function mkWaterfall(id, labels, ranges, colors) {
+  const ctx = document.getElementById(id);
+  const ex = Chart.getChart(ctx); if(ex) ex.destroy();
+  new Chart(ctx, {
+    type:'bar',
+    data:{
+      labels,
+      datasets:[{
+        data: ranges.map(([lo,hi]) => [Math.min(lo,hi), Math.max(lo,hi)]),
+        backgroundColor: colors.map(c => c+'cc'),
+        borderColor: colors,
+        borderWidth:1, borderRadius:3, borderSkipped:false,
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{ display:false },
+        tooltip:{
+          callbacks:{
+            label: ctx => {
+              const [lo,hi] = ctx.raw;
+              return ` ${Math.round(hi-lo).toLocaleString('ja-JP')} RMB`;
+            }
+          }
+        }
+      },
+      scales:{
+        x:{ ticks:{ color:'#888480', font:{size:11} }, grid:{ color:'rgba(0,0,0,.04)' } },
+        y:{ ticks:{ color:'#888480', font:{size:10}, callback:v=>Math.round(v/1000)+'K' }, grid:{ color:'rgba(0,0,0,.04)' } }
+      }
+    }
+  });
+}
+
+function mkLine(id, labels, datasets, opts={}) {
+  const ctx = document.getElementById(id);
+  const ex = Chart.getChart(ctx); if(ex) ex.destroy();
+  const dsets = datasets.map(ds => ({
+    type:'line', label:ds.label, data:ds.data,
+    borderColor:ds.color, backgroundColor:ds.color+'22',
+    borderWidth:2, pointRadius:3, tension:.35, fill:true, spanGaps:true
+  }));
+  if(opts.refLine) dsets.push({
+    type:'line', label:opts.refLabel||'目標',
+    data:new Array(labels.length).fill(opts.refLine),
+    borderColor:'#C00000', borderDash:[4,3], borderWidth:1.5,
+    pointRadius:0, fill:false
+  });
+  const yTick = opts.yUnit ? { callback: v => v+opts.yUnit } : {};
+  new Chart(ctx, {
+    data:{ labels, datasets:dsets },
+    options:{
+      ...BASE_OPT,
+      scales:{ ...BASE_OPT.scales, y:{ ...BASE_OPT.scales.y, ticks:{ ...BASE_OPT.scales.y.ticks, ...yTick } } }
+    }
+  });
+}
+
+// ── ユーティリティ ─────────────────────────────────────────────
+async function api(type, params={}) {
+  const url = new URL(GAS_URL);
+  url.searchParams.set('type', type);
+  Object.entries(params).forEach(([k,v]) => url.searchParams.set(k, v));
+  const res = await fetch(url.toString());
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  return res.json();
+}
+
+// 数値フォーマット（羅盤）
+function fmtN(n) { return n==null?'—':Math.round(n).toLocaleString('ja-JP'); }
+
+// 数値フォーマット（帳簿：通貨切替対応）
+function fmtV(n) {
+  if (n==null) return '—';
+  return Math.round(n).toLocaleString('ja-JP');
+}
+
+function v(n) { return n==null ? 0 : n; }
+function pct(r) { return r==null?'—':(r*100).toFixed(1)+'%'; }
+
+function loading(msg) {
+  document.getElementById('load-msg').textContent = msg||'読み込み中...';
+  document.getElementById('overlay').classList.remove('hidden');
+}
+function hideLoading() { document.getElementById('overlay').classList.add('hidden'); }
+function showErr(msg) {
+  const el = document.getElementById('err');
+  el.textContent = '⚠ ' + msg; el.style.display='block';
+  console.error(msg);
+}
+
+function setLogoFromStore(store) {
+  // logo-sub は非表示
+}
+
+
+// ── KPIヘルプポップアップ ──────────────────────────────────────
+// ── KPI定義データ ──────────────────────────────────────────────
+const COMPASS_FOLDER_URL = 'https://drive.google.com/drive/folders/1VwB3fLm-A4cVZ_t-YNqQvZwdgSPlXfjX';
+const LEDGER_SS_URL      = 'https://docs.google.com/spreadsheets/d/1chtMwQKNKqGsKSsnag8GApLl8u1OTvgW1ZtshFT5IVQ/edit';
+
+const KPI_DEFS = {
+  gmv: {
+    icon: '📦', title: 'GMV（成交金額）', subtitle: '注文確定ベースの総売上',
+    sources: [{
+      name: '羅盤 XLSX', icon: '📗',
+      tags: ['列: 成交金額', '条件: 载体=全部, 推広=不限'],
+      formula_tag: 'SUM()',
+      url: COMPASS_FOLDER_URL, urlLabel: 'Google Drive で開く', useCompass: true
+    }],
+    formula: 'GMV = SUM(成交金額)\n  WHERE 经营类型 = 全店\n  AND   载体类型 = 全部\n  AND   推广时段 = 不限',
+    note: 'キャンセル・返品前の金額。実収入は「決済金額」を参照。'
+  },
+  settle: {
+    icon: '💴', title: '決済金額（結算金額）', subtitle: '返品・キャンセル後の確定売上',
+    sources: [{
+      name: '羅盤 XLSX', icon: '📗',
+      tags: ['列: 結算金額', '条件: 载体=全部, 推広=不限'],
+      formula_tag: 'SUM()',
+      url: COMPASS_FOLDER_URL, urlLabel: 'Google Drive で開く', useCompass: true
+    }],
+    formula: '決済金額 = SUM(結算金額)\n  WHERE 经营类型 = 全店\n  AND   载体类型 = 全部',
+    note: 'GMVから返品・キャンセル分を差し引いた実際の収入。'
+  },
+  invest: {
+    icon: '📢', title: '投放消耗（広告費）', subtitle: '全チャネルの広告費合計',
+    sources: [{
+      name: '羅盤 XLSX', icon: '📗',
+      tags: ['列: 投放消耗', '条件: 载体=全部, 推広=不限'],
+      formula_tag: 'SUM()',
+      url: COMPASS_FOLDER_URL, urlLabel: 'Google Drive で開く', useCompass: true
+    }],
+    formula: '投放消耗 = SUM(投放消耗)\n  直播广告費\n  + 短视频广告費\n  + 商品カード広告費',
+    note: '「支出金額」（col23）ではなく「投放消耗」（col24）を使用。プラットフォーム手数料は含まない。'
+  },
+  feeRatio: {
+    icon: '📉', title: '総合費比', subtitle: 'GMVに対する広告費の比率',
+    sources: [{
+      name: '羅盤 XLSX', icon: '📗',
+      tags: ['列: 综合費比', '条件: 载体=全部, 推広=不限'],
+      formula_tag: '羅盤の実測値',
+      url: COMPASS_FOLDER_URL, urlLabel: 'Google Drive で開く', useCompass: true
+    }],
+    formula: '費比 = 投放消耗 ÷ GMV × 100%\n\n目標: 30% 以下',
+    note: '羅盤の「综合費比（剔除退款、店铺被投）」を参照。退款分を除外した補正値。'
+  },
+  roas: {
+    icon: '📈', title: '総合ROAS', subtitle: '広告費1元あたりのGMV',
+    sources: [{
+      name: '羅盤 XLSX', icon: '📗',
+      tags: ['算出値: GMV ÷ 投放消耗'],
+      formula_tag: '計算値',
+      url: COMPASS_FOLDER_URL, urlLabel: 'Google Drive で開く', useCompass: true
+    }],
+    formula: 'ROAS = GMV ÷ 投放消耗\n\n目標: 3.0x 以上',
+    note: 'ROASが3.0xの場合、1元の広告費で3元のGMVを生み出している。'
+  },
+  refund: {
+    icon: '↩️', title: '平均退款率', subtitle: '返品・キャンセル率の月次平均',
+    sources: [{
+      name: '羅盤 XLSX', icon: '📗',
+      tags: ['列: 退款率', '条件: 载体=全部, 推広=不限'],
+      formula_tag: 'AVG()',
+      url: COMPASS_FOLDER_URL, urlLabel: 'Google Drive で開く', useCompass: true
+    }],
+    formula: '退款率 = 返品金額 ÷ GMV × 100%\n月次平均 = AVG(日次退款率)',
+    note: '支払時間ベースと退款時間ベースで値が異なる場合あり。羅盤では両方表示されるため注意。'
+  }
+};
+
+// 現在値キャッシュ（renderCompass時に更新）
+const KPI_CURRENT = {};
+
+function showKpiPopup(key) {
+  const d = KPI_DEFS[key];
+  if (!d) return;
+
+  document.getElementById('kpi-popup-icon').textContent    = d.icon;
+  document.getElementById('kpi-popup-title').textContent   = d.title;
+  document.getElementById('kpi-popup-subtitle').textContent = d.subtitle;
+
+  // 現在値
+  const cv = KPI_CURRENT[key];
+  document.getElementById('kpi-popup-current-val').textContent = cv ?? '—';
+
+  // データ出典（羅盤ファイルは選択中のSSに直接リンク）
+  const _ssUrl  = S.fileId
+    ? 'https://docs.google.com/spreadsheets/d/' + S.fileId + '/edit'
+    : COMPASS_FOLDER_URL;
+  const _ssName = (S.fileName || ('収支分析' + (S.month||''))) + ' を開く';
+  document.getElementById('kpi-popup-sources').innerHTML = d.sources.map(s => {
+    const linkUrl   = s.useCompass ? _ssUrl  : s.url;
+    const linkLabel = s.useCompass ? _ssName : s.urlLabel;
+    return `
+    <div class="kpi-source-card">
+      <div class="kpi-source-card-title">${s.icon} ${s.name}</div>
+      <div class="kpi-source-tags">
+        ${s.tags.map(t => '<span class="kpi-source-tag">' + t + '</span>').join('')}
+        <span class="kpi-source-tag note">${s.formula_tag}</span>
+      </div>
+      <a class="kpi-source-link" href="${linkUrl}" target="_blank">${linkLabel} →</a>
+    </div>`;
+  }).join('');
+
+  // 計算式
+  document.getElementById('kpi-popup-formula').textContent = d.formula;
+
+  // 補足
+  const noteWrap = document.getElementById('kpi-popup-note-wrap');
+  const noteEl   = document.getElementById('kpi-popup-note');
+  if (d.note) {
+    noteEl.textContent = d.note;
+    noteWrap.style.display = '';
+  } else {
+    noteWrap.style.display = 'none';
+  }
+
+  document.getElementById('kpi-popup-overlay').classList.add('show');
+}
+
+function closeKpiPopup(e) {
+  if (e.target === document.getElementById('kpi-popup-overlay')) {
+    document.getElementById('kpi-popup-overlay').classList.remove('show');
+  }
+}
+
+window.addEventListener('load', init);
+</script>
+</body>
+</html>
